@@ -32,6 +32,16 @@ public:
     FILE* get() const { return fp; }
 };
 
+
+extern "C" {
+    void cplua_print(const char* s, int l) {
+        Debug_Printf(0, 0, false, 0, "%.*s", l, s);
+    }
+    void cplua_println() {
+        Debug_Printf(0, 0, false, 0, "\n");
+    }
+}
+
 bool RunLuaScript(const std::string& filepath) {
     // 1. Setup backup screen
     vram_bak = (decltype(vram_bak))malloc(sizeof(*vram_bak));

@@ -1,13 +1,16 @@
+#include <sdk/calc/calc.h>
 #include "lua_calc.hpp"
 
 // calc.clear()
 static int l_clear(lua_State *L) {
+    (void)L;
     LCD_ClearScreen();
     return 0;
 }
 
 // calc.refresh()
 static int l_refresh(lua_State *L) {
+    (void)L;
     LCD_Refresh();
     return 0;
 }
@@ -19,8 +22,8 @@ static int l_set_pixel(lua_State *L) {
     int color = luaL_checkinteger(L, 3);
 
     // Safety check
-    if (x >= 0 && x < LCD_WIDTH_PX && y >= 0 && y < LCD_HEIGHT_PX) {
-        vram[y * LCD_WIDTH_PX + x] = static_cast<uint16_t>(color);
+    if (x >= 0 && x < calc::width && y >= 0 && y < calc::height) {
+        calc::vram[y * calc::width + x] = static_cast<uint16_t>(color);
     }
 
     return 0;

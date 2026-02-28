@@ -1,3 +1,4 @@
+#include <dirent.h>
 #include <appdef.h>
 
 #include <sdk/os/debug.h>
@@ -52,7 +53,8 @@ public:
 
     for (size_t i = 0; i < luaFiles.size(); ++i) {
         // Allocate dynamically; the list manages the objects
-        char* nameCopy = strdup(luaFiles[i].c_str());
+        char* nameCopy = new char[luaFiles[i].length() + 1];
+        strcpy(nameCopy, luaFiles[i].c_str());
         PegRadioButton* item = new PegRadioButton(0, 0, nameCopy, Id_List + 10 + i);
         options.push_back(item);
         vertList->Add(item->obj());
@@ -73,29 +75,26 @@ public:
 
 
 
+
   void ScanLuaFiles(const char* pattern) {
-      int searchHandle;
-      struct stat stat_buf;
+      DIR *d;
+      struct dirent *dir;
+      std::string dir_path = pattern;
+      if (dir_path.length() > 5 && dir_path.substr(dir_path.length() - 5) == "*.lua") {
+          dir_path = dir_path.substr(0, dir_path.length() - 5);
+      }
 
-      int result = findfirst(pattern, &searchHandle, &stat_buf);
-      while (result == 0) {
-          if ((stat_buf.fileMode & FILE_DIR) == 0) {
-              std::string path;
-              std::string pat(pattern);
-              if (pat.find("\\cplua\\") != std::string::npos) {
-                  path = "\\cplua\\";
-              } else {
-                  path = "\\";
-              }
-              path += stat_buf.fileName;
-
-              if (path.length() >= 4 && path.substr(path.length() - 4) == ".lua") {
-                  luaFiles.push_back(path);
+      d = opendir(dir_path.c_str());
+      if (d) {
+          while ((dir = readdir(d)) != NULL) {
+              std::string filename = dir->d_name;
+              if (filename.length() >= 4 && filename.substr(filename.length() - 4) == ".lua") {
+                  std::string full_path = dir_path + filename;
+                  luaFiles.push_back(full_path);
               }
           }
-          result = findnext(searchHandle, &stat_buf);
+          closedir(d);
       }
-      findclose(searchHandle);
   }
 SIGNED Message(const PegMessage &mesg) override {
     switch (mesg.wType) {
@@ -144,6 +143,9 @@ extern "C" void calcExit() {
 }
 
 int main(int argc, char **argv, char **envp) {
+  (void)argc;
+  (void)argv;
+  (void)envp;
   calcInit();
 
   PegRect rectWin(10, 10, 310, 280);

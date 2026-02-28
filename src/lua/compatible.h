@@ -1,34 +1,39 @@
-#ifndef compatible_h
-#define compatible_h
-#include "stdio.h"
-typedef void (*__p_sig_fn_t)(int);
-__p_sig_fn_t signal(int _SigNum, __p_sig_fn_t _Func);
-typedef int sig_atomic_t;
-struct tm {
-    int tm_sec;
-    int tm_min;
-    int tm_hour;
-    int tm_mday;
-    int tm_mon;
-    int tm_year;
-    int tm_wday;
-    int tm_yday;
-    int tm_isdst;
-};
-typedef int time_t;
-char *getenv(char *name);
+#pragma once
 
-#define _P_tmpdir "\\"
-#define L_tmpnam (sizeof(_P_tmpdir) + 12)
-#define CLOCKS_PER_SEC 1000
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sdk/os/debug.h>
 
-#define EXIT_SUCCESS 1
-#define EXIT_FAILURE 0
+#ifdef L_tmpnam
+#undef L_tmpnam
+#endif
+#define L_tmpnam 20
 
+#ifdef EXIT_SUCCESS
+#undef EXIT_SUCCESS
+#endif
+#define EXIT_SUCCESS 0
+
+#ifdef EXIT_FAILURE
+#undef EXIT_FAILURE
+#endif
+#define EXIT_FAILURE 1
+
+#ifdef lua_writestring
+#undef lua_writestring
+#endif
+#define lua_writestring(s,l) Debug_Printf(0, 0, false, 0, "%.*s", (int)(l), s)
+
+#ifdef lua_writeline
+#undef lua_writeline
+#endif
+#define lua_writeline() Debug_Printf(0, 0, false, 0, "\n")
+
+#ifndef SIG_DFL
 #define SIG_DFL 0
+#endif
+
+#ifndef SIGINT
 #define SIGINT 1
-
-#define lua_writestring(s,l) Print(s)
-#define lua_writeline() Print("\n")
-
 #endif

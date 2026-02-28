@@ -2,176 +2,156 @@
 
 #include <sdk/os/debug.h>
 #include <sdk/os/lcd.h>
+#include <sdk/os/file.h>
+
+#include <sys/stat.h>
 
 #include "heap_hack.hpp"
 
 #include "os/gui/peg.hpp"
 #include "os/gui/pegtypes.hpp"
+#include "cplua.hpp"
 
-APP_NAME("PegEditBox Demo")
-APP_AUTHOR("snudget, pho3")
-APP_DESCRIPTION("PegVertList and PegEditBox")
-APP_VERSION("1.1.0")
+#include <vector>
+#include <string>
+#include <cstring>
+
+APP_NAME("CPLua")
+APP_AUTHOR("jules")
+APP_DESCRIPTION("Lua for Hollyhock")
+APP_VERSION("1.0.0")
 
 const WORD TEXTBOX_STYLE = FF_NONE | EF_WRAP | TJ_LEFT;
 
-class MyWindow : public PegDecoratedWindow {
-  // Auto-generate element ids, so we don't have to manually set them
+class LuaFilePickerWindow : public PegDecoratedWindow {
   enum Ids {
     Id_InfoText = 1,
     Id_List,
-    Id_Opt_1,
-    Id_Opt_2,
-    Id_Opt_3,
-    Id_Opt_4,
-    Id_Btn,
-    Id_EditBox // New ID for edit box
+    Id_Btn
   };
 
 public:
-  MyWindow(PegRect &rect) : PegDecoratedWindow(rect) {
-    // This is the title bar of our window. Remember to add it, or you won't be
-    // able to close it
-    auto title = new PegTitle("Testle3", TF_CLOSEBUTTON);
+  LuaFilePickerWindow(PegRect &rect) : PegDecoratedWindow(rect) {
+    auto title = new PegTitle("CPLua", TF_CLOSEBUTTON);
 
-    // These are absolute coordinates.
-    // Since our window starts at x=20, this will give 20 pixels of padding
-    // This method will also recalculate the positions in horizontal mode
     PegRect textRect;
     textRect.SetAndCenterIfLandscape(20, 30, 300, 60, TRUE);
-    infoBox = new PegTextBox(textRect, Id_InfoText, TEXTBOX_STYLE,
-                             "Select an option below...");
+    infoBox = new PegTextBox(textRect, Id_InfoText, TEXTBOX_STYLE, "Select a Lua script to run:");
 
     Add(title->obj());
     Add(infoBox->obj());
 
-    // Define the List Area
-    // The list will occupy this specific rectangle.
-    // If items exceed this area, it should scroll (if scrollbars enabled/auto).
     PegRect listRect;
-    listRect.SetAndCenterIfLandscape(20, 70, 150, 180, TRUE); // Left side
+    listRect.SetAndCenterIfLandscape(20, 70, 300, 180, TRUE);
 
-    // Create the Vertical List
-    // FF_THIN: Draws a thin border around the list
     vertList = new PegVertList(listRect, Id_List, FF_THIN);
 
-    options[0] = new PegRadioButton(0, 0, "Option 1", Id_Opt_1);
-    options[1] = new PegRadioButton(0, 0, "Option 2", Id_Opt_2);
-    options[2] = new PegRadioButton(0, 0, "Option 3", Id_Opt_3);
-    options[3] = new PegRadioButton(0, 0, "Option 4", Id_Opt_4);
+    // Search for lua files in root and cplua folder
+    ScanLuaFiles("\\*.lua");
+    ScanLuaFiles("\\cplua\\*.lua");
 
-    // Add Items to the List
-    // We pass the underlying thin object via ->obj()
-    for (auto item : options) {
-      vertList->Add(item->obj());
+    for (size_t i = 0; i < luaFiles.size(); ++i) {
+        // Allocate dynamically; the list manages the objects
+        char* nameCopy = strdup(luaFiles[i].c_str());
+        PegRadioButton* item = new PegRadioButton(0, 0, nameCopy, Id_List + 10 + i);
+        options.push_back(item);
+        vertList->Add(item->obj());
     }
 
-    // Select first option
-    options[0]->SetSelected();
-    vertList->SetSelected(options[0]->obj()); // Using wrapper helper
+    if (!options.empty()) {
+        options[0]->SetSelected();
+        vertList->SetSelected(options[0]->obj());
+    }
+
     Add(vertList->obj());
 
-    // 3. PegEditBox (Editable Text Area)
-    // Placed to the right of the list or below depending on space.
-    // Here placing it to the right side (Landscape logic assumed mostly)
-    PegRect editRect;
-    editRect.SetAndCenterIfLandscape(160, 70, 300, 180, TRUE);
-
-    mpEditBox =
-        new PegEditBox(editRect, Id_EditBox, FF_RECESSED | EF_EDIT | EF_WRAP);
-
-    // Set initial text
-    mpEditBox->DataSet("Type here...\nLine 2");
-
-    // Enable vertical scrollbar automatically when text exceeds height
-    mpEditBox->SetScrollMode(WSM_AUTOVSCROLL | WSM_CONTINUOUS);
-
-    Add(mpEditBox->obj());
-
-    // 4. Select Button
     PegRect buttonRect;
     buttonRect.SetAndCenterIfLandscape(110, 200, 210, 230, TRUE);
-    auto button =
-        new PegTextButton(buttonRect, "Check", Id_Btn, AF_ENABLED | TJ_CENTER);
+    auto button = new PegTextButton(buttonRect, "Run Script", Id_Btn, AF_ENABLED | TJ_CENTER);
     Add(button->obj());
   }
 
-  SIGNED Message(const PegMessage &mesg) override {
-    const char *strings[4] = {
-        "Opt 1",
-        "Opt 2",
-        "Opt 3",
-        "Opt 4",
-    };
 
-    // All events can be handled in a single switch
+
+  void ScanLuaFiles(const char* pattern) {
+      int searchHandle;
+      struct stat stat_buf;
+
+      int result = findfirst(pattern, &searchHandle, &stat_buf);
+      while (result == 0) {
+          if ((stat_buf.fileMode & FILE_DIR) == 0) {
+              std::string path;
+              std::string pat(pattern);
+              if (pat.find("\\cplua\\") != std::string::npos) {
+                  path = "\\cplua\\";
+              } else {
+                  path = "\\";
+              }
+              path += stat_buf.fileName;
+
+              if (path.length() >= 4 && path.substr(path.length() - 4) == ".lua") {
+                  luaFiles.push_back(path);
+              }
+          }
+          result = findnext(searchHandle, &stat_buf);
+      }
+      findclose(searchHandle);
+  }
+SIGNED Message(const PegMessage &mesg) override {
     switch (mesg.wType) {
-    // Detect select button click
     case PEG_SIGNAL(Id_Btn, PSF_CLICKED):
-      // On button click, we update the status box with current selection
-      // AND append some text to the EditBox to demonstrate API usage.
-
-      infoBox->DataSet("Processing...");
-
-      for (int i = 0; i < 4; i++) {
+      for (size_t i = 0; i < options.size(); i++) {
         if (options[i]->IsSelected()) {
-          infoBox->DataSet(strings[i]);
+          infoBox->DataSet("Running...");
+          Screen()->Invalidate(infoBox->obj()->mClip);
+          infoBox->Draw();
 
-          // Append selection to edit box
-          // Note: Append automatically handles redrawing if bDraw is true
-          // (default)
-          mpEditBox->Append("\nSelected: ");
-          mpEditBox->Append(strings[i]);
+          std::string scriptToRun = luaFiles[i];
+
+          // Wait for drawing
+          LCD_Refresh();
+
+          RunLuaScript(scriptToRun);
+
+          infoBox->DataSet("Select a Lua script to run:");
+          Screen()->Invalidate(infoBox->obj()->mClip);
+          infoBox->Draw();
+          LCD_Refresh();
+          break;
         }
       }
-
-      Screen()->Invalidate(infoBox->obj()->mClip);
-
-      // Redraw the text
-      infoBox->Draw();
       return 0;
     }
 
-    // We still want events like the close button to be handled
     return PegDecoratedWindow::Message(mesg);
   }
 
 private:
   PegTextBox *infoBox;
   PegVertList *vertList;
-  PegRadioButton *options[4];
-  PegEditBox *mpEditBox; // Pointer to our new EditBox
+  std::vector<PegRadioButton*> options;
+  std::vector<std::string> luaFiles;
 };
 
 extern "C" void calcInit() {
-  // Allocate 1MB of memory at the end of the heap for our program
   auto *ptr = initFixedRegion(2 * 1024 * 1024);
-
-  // Not enough heap space, reset the system to recreate the heap
   if (ptr != reinterpret_cast<void *>(0x8cc80000))
     heapReset();
 }
 
 extern "C" void calcExit() {
-  // Call the OS out-of-memory logic to remove our heap abuse
   heapReset();
 }
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv,
-         [[maybe_unused]] char **envp) {
-  // TODO: Should be called by the loader before the actual binary is loaded.
-  // But since we reset the heap anyways if there is data, this shouldn't matter
+int main(int argc, char **argv, char **envp) {
   calcInit();
 
-  // Make window slightly larger to fit everything nicely
   PegRect rectWin(10, 10, 310, 280);
-  auto win = new MyWindow(rectWin);
+  auto win = new LuaFilePickerWindow(rectWin);
 
-  // Show the window. This will also delete all the elements when it is closed
   win->Execute();
-  // But it won't delete the wrapper class
-  // WARNING: This may change in the future, not sure yet
-  delete win;
 
+  delete win;
   calcExit();
+  return 0;
 }

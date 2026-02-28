@@ -1,10 +1,18 @@
 #include "compatible.h"
 
+// In Hollyhock SDK, newlib or minimal libc might already define some of these.
+// We should only define what's missing, but since this was completely breaking standard build:
+// We comment these out, because we've included <stdio.h>, <stdlib.h>, <time.h> in compatible.h
+// which brings the real libc functions if they exist.
+// If the linker complains about missing functions, we can add stubs here.
+
+#if 0
+// These are standard library functions. They shouldn't be redefined like this.
 __p_sig_fn_t signal(int _SigNum, __p_sig_fn_t _Func) {
-    return;
+    return 0;
 }
 
-char *getenv(char *name) {
+char *getenv(const char *name) {
     return 0;
 }
 
@@ -39,8 +47,8 @@ int read() {
 int setvbuf(FILE *fp, char *c, int m, size_t n) {
     return 0;
 }
-int exit() {
-    return 0;
+void exit(int status) {
+
 }
 int printf(const char *fmt, ...) {
     return 0;
@@ -63,6 +71,7 @@ int ungetc(int c, FILE *fp) {
 FILE *freopen(const char *path, const char *mode, FILE *fp) {
     return 0;
 }
-int time(int t) {
+time_t time(time_t *t) {
     return 0;
 }
+#endif

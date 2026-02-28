@@ -1,3 +1,4 @@
+OS ?= 2000
 SRCDIR = src
 BUILDDIR = obj
 OUTDIR = dist
@@ -94,7 +95,6 @@ $(BUILDDIR)/%.o: %.cpp $(OS_TXT)
 	@mkdir -p $(dir $(DEPDIR)/$<)
 	+$(CXX) -c $< -o $@ $(CXX_FLAGS) $(DEPFLAGS)
 
-OS ?= 7002
 
 compile_commands.json:
 	@$(MAKE) OS=$(OS) clean

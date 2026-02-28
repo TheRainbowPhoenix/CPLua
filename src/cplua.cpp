@@ -3,7 +3,6 @@
 #include <sdk/os/debug.h>
 #include <sdk/os/lcd.h>
 #include <sdk/os/file.h>
-#include <sys/stat.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -59,22 +58,29 @@ bool RunLuaScript(const std::string& filepath) {
         return false;
     }
 
-    struct stat stat_buf;
-    if (fstat(file.get(), &stat_buf) != 0 || stat_buf.st_size <= 0) {
+    // Use seek to get file size instead of fstat to avoid POSIX issues with CP handles
+    int file_size = lseek(file.get(), 0, SEEK_END);
+    lseek(file.get(), 0, SEEK_SET);
+
+    if (file_size <= 0) {
         lua_close(L);
+        memcpy(vram, vram_bak, sizeof(*vram_bak));
+        LCD_Refresh();
         free(vram_bak);
         return false;
     }
 
-    char* scriptContent = (char*)malloc(stat_buf.st_size + 1);
+    char* scriptContent = (char*)malloc(file_size + 1);
     if (!scriptContent) {
         lua_close(L);
+        memcpy(vram, vram_bak, sizeof(*vram_bak));
+        LCD_Refresh();
         free(vram_bak);
         return false;
     }
 
-    read(file.get(), scriptContent, stat_buf.st_size);
-    scriptContent[stat_buf.st_size] = '\0';
+    read(file.get(), scriptContent, file_size);
+    scriptContent[file_size] = '\0';
 
     // 4. Run Script
     if (luaL_dostring(L, scriptContent)) {

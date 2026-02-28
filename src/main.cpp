@@ -12,6 +12,12 @@
 #include "os/gui/pegtypes.hpp"
 #include "cplua.hpp"
 
+#ifdef DEBUG
+#define TRACE_MAIN(msg) Debug_Printf(0, 0, false, 0, msg); LCD_Refresh()
+#else
+#define TRACE_MAIN(msg)
+#endif
+
 #include <vector>
 #include <string>
 #include <cstring>
@@ -118,6 +124,7 @@ SIGNED Message(const PegMessage &mesg) override {
           // Wait for drawing
           LCD_Refresh();
 
+          TRACE_MAIN("Running...");
           RunLuaScript(scriptToRun);
 
           infoBox->DataSet("Select a Lua script to run:");

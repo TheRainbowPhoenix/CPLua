@@ -19,7 +19,7 @@ SDK_DIR?=/sdk
 DEPFLAGS=-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 WARNINGS=-Wall -Wextra -pedantic -Werror -pedantic-errors
 INCLUDES=-I$(SDK_DIR)/include #-I$(SOURCEDIR)
-DEFINES=
+DEFINES=-DDEBUG=1
 FUNCTION_FLAGS=-fno-builtin -ffunction-sections -fdata-sections -gdwarf-5 -Oz -flto -fdevirtualize-at-ltrans -fwhole-program
 COMMON_FLAGS=$(FUNCTION_FLAGS) $(INCLUDES) $(WARNINGS) $(DEFINES)
 

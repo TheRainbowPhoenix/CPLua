@@ -21,3 +21,8 @@ compile_commands.json
 /artifact.zip
 /app_template
 /os/os.txt
+/download.py
+/get_headers.py
+/headers.txt
+/sdk_headers.txt
+/test_compatible.sh

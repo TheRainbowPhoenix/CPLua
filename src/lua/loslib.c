@@ -66,6 +66,7 @@
 #define l_pushtime(L,t)		lua_pushinteger(L,(lua_Integer)(t))
 
 
+#if 0
 static time_t l_checktime (lua_State *L, int arg) {
   (void)L;
   (void)arg;
@@ -73,6 +74,7 @@ static time_t l_checktime (lua_State *L, int arg) {
   luaL_argcheck(L, (time_t)t == t, arg, "time out-of-bounds");
   return (time_t)t;
 }
+#endif
 
 #endif				/* } */
 

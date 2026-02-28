@@ -22,7 +22,7 @@ static int l_set_pixel(lua_State *L) {
     int color = luaL_checkinteger(L, 3);
 
     // Safety check
-    if (x >= 0 && x < width && y >= 0 && y < height) {
+    if (x >= 0 && (unsigned int)x < width && y >= 0 && (unsigned int)y < height) {
         vram[y * width + x] = static_cast<uint16_t>(color);
     }
 

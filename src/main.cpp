@@ -90,7 +90,7 @@ public:
       char16_t filename_buf[100] = u"\\fls0\\";
 
       // filename_buf + 6 is the address where the SDK will write the found file name.
-      int ret = File_FindFirst(search_pattern, &findHandle, filename_buf + 6, &findInfo);
+      int ret = File_FindFirst(reinterpret_cast<const char_const16_t*>(search_pattern), &findHandle, reinterpret_cast<char_const16_t*>(filename_buf + 6), &findInfo);
 
       while (ret >= 0) { // FILE_OK is typically 0
           if (findInfo.type == 1) { // 1 is usually File_FindInfo::EntryTypeFile in standard CP SDK
@@ -100,7 +100,7 @@ public:
               }
               luaFiles.push_back(path);
           }
-          ret = File_FindNext(findHandle, filename_buf + 6, &findInfo);
+          ret = File_FindNext(findHandle, reinterpret_cast<char_const16_t*>(filename_buf + 6), &findInfo);
       }
       File_FindClose(findHandle);
   }

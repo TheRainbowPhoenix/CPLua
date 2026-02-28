@@ -1,6 +1,10 @@
 #pragma once
 
 #include <stdio.h>
+#include <signal.h>
+#ifndef sig_atomic_t
+typedef int sig_atomic_t;
+#endif
 #include <stdlib.h>
 #include <time.h>
 #include <sdk/os/debug.h>

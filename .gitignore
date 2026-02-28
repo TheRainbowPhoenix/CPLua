@@ -1,5 +1,32 @@
+# Exclude build and cache files
 dist/
 obj/
 .cache/
 .deps/
+compile_commands.json
+
+# Exclude original repositories cloned during exploration
+/CPBoy/
+/CPDoom/
+/fxlua/
+/hhk3-systemui/
+/hollyhock-3/
+/LuaFX/
+/yal/
+/temp_fxlua/
+/app_template/
+/demos/
+/build_context/
+
+# Exclude scripts and temp files
+/bin/
+/fake_toolchain.sh
+/download_toolchain.py
+/test_skiptoolchain.sh
+/docker_setup.sh
+/get_toolchain.sh
+/update_ignores.py
+/artifact.zip
+
+# We do want our src/lua and src/os and os/ to be tracked
 compile_commands.json

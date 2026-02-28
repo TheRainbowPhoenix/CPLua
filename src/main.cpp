@@ -1,4 +1,3 @@
-#include <dirent.h>
 #include <appdef.h>
 
 #include <sdk/os/debug.h>
@@ -48,8 +47,8 @@ public:
     vertList = new PegVertList(listRect, Id_List, FF_THIN);
 
     // Search for lua files in root and cplua folder
-    ScanLuaFiles("\\*.lua");
-    ScanLuaFiles("\\cplua\\*.lua");
+    ScanLuaFiles("\\fls0\\*.lua");
+
 
     for (size_t i = 0; i < luaFiles.size(); ++i) {
         // Allocate dynamically; the list manages the objects
@@ -76,25 +75,34 @@ public:
 
 
 
-  void ScanLuaFiles(const char* pattern) {
-      DIR *d;
-      struct dirent *dir;
-      std::string dir_path = pattern;
-      if (dir_path.length() > 5 && dir_path.substr(dir_path.length() - 5) == "*.lua") {
-          dir_path = dir_path.substr(0, dir_path.length() - 5);
-      }
 
-      d = opendir(dir_path.c_str());
-      if (d) {
-          while ((dir = readdir(d)) != NULL) {
-              std::string filename = dir->d_name;
-              if (filename.length() >= 4 && filename.substr(filename.length() - 4) == ".lua") {
-                  std::string full_path = dir_path + filename;
-                  luaFiles.push_back(full_path);
+
+
+
+
+  void ScanLuaFiles(const char* /*pattern*/) {
+      int findHandle = 0;
+      File_FindInfo findInfo{};
+
+      const char16_t search_pattern[] = u"\\fls0\\*.lua";
+
+      // Filename buffer without the wildcard
+      char16_t filename_buf[100] = u"\\fls0\\";
+
+      // filename_buf + 6 is the address where the SDK will write the found file name.
+      int ret = File_FindFirst(search_pattern, &findHandle, filename_buf + 6, &findInfo);
+
+      while (ret >= 0) { // FILE_OK is typically 0
+          if (findInfo.type == 1) { // 1 is usually File_FindInfo::EntryTypeFile in standard CP SDK
+              std::string path;
+              for(int i=0; filename_buf[i] != 0; ++i) {
+                  path += (char)filename_buf[i];
               }
+              luaFiles.push_back(path);
           }
-          closedir(d);
+          ret = File_FindNext(findHandle, filename_buf + 6, &findInfo);
       }
+      File_FindClose(findHandle);
   }
 SIGNED Message(const PegMessage &mesg) override {
     switch (mesg.wType) {

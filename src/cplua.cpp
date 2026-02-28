@@ -15,8 +15,8 @@ extern "C" {
 #include "lua/lualib.h"
 }
 
-// A backup pointer for the original calc::vram content
-std::remove_pointer_t<decltype(calc::vram)> (*vram_bak)[calc::width * calc::height];
+// A backup pointer for the original vram content
+std::remove_pointer_t<decltype(vram)> (*vram_bak)[width * height];
 
 // Simple RAII file handle wrapper
 class SafeFileHandle {
@@ -37,7 +37,7 @@ bool RunLuaScript(const std::string& filepath) {
     vram_bak = (decltype(vram_bak))malloc(sizeof(*vram_bak));
     if (!vram_bak) return false;
 
-    memcpy(vram_bak, calc::vram, sizeof(*vram_bak));
+    memcpy(vram_bak, vram, sizeof(*vram_bak));
     LCD_ClearScreen();
 
     // 2. Init Lua
@@ -66,7 +66,7 @@ bool RunLuaScript(const std::string& filepath) {
 
     if (file_size <= 0) {
         lua_close(L);
-        memcpy(calc::vram, vram_bak, sizeof(*vram_bak));
+        memcpy(vram, vram_bak, sizeof(*vram_bak));
         LCD_Refresh();
         free(vram_bak);
         return false;
@@ -75,7 +75,7 @@ bool RunLuaScript(const std::string& filepath) {
     char* scriptContent = (char*)malloc(file_size + 1);
     if (!scriptContent) {
         lua_close(L);
-        memcpy(calc::vram, vram_bak, sizeof(*vram_bak));
+        memcpy(vram, vram_bak, sizeof(*vram_bak));
         LCD_Refresh();
         free(vram_bak);
         return false;
@@ -100,7 +100,7 @@ bool RunLuaScript(const std::string& filepath) {
     lua_close(L);
 
     // Restore Screen
-    memcpy(calc::vram, vram_bak, sizeof(*vram_bak));
+    memcpy(vram, vram_bak, sizeof(*vram_bak));
     LCD_Refresh();
     free(vram_bak);
 

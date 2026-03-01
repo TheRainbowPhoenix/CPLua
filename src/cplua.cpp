@@ -34,7 +34,13 @@ public:
         fp = fopen(filepath, "rb");
     }
     ~SafeFileHandle() {
-        if (fp) fclose(fp);
+        close();
+    }
+    void close() {
+        if (fp) {
+            fclose(fp);
+            fp = nullptr;
+        }
     }
     bool is_valid() const { return fp != nullptr; }
     FILE* get() const { return fp; }
@@ -128,6 +134,9 @@ bool RunLuaScript(const std::string& filepath) {
     fread(scriptContent, 1, file_size, file.get());
     scriptContent[file_size] = '\0';
     TRACE("File read");
+
+    // Close file immediately to avoid locking the filesystem if Lua hangs or exits abruptly
+    file.close();
 
     // 4. Run Script
     TRACE("Calling luaL_dostring...");

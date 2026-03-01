@@ -1,7 +1,15 @@
-SOURCEDIR = src
+OS ?= 2000
+SRCDIR = src
 BUILDDIR = obj
 OUTDIR = dist
 DEPDIR = .deps
+
+OS_TXT = $(OUTDIR)/os.txt
+
+OSDIR_2000 := os/2000/
+OSDIR_7002 := os/7002/
+
+SOURCEDIR := $(SRCDIR) $(OSDIR_$(OS))
 
 AS:=sh4a_nofpueb-elf-gcc
 AS_FLAGS:=-gdwarf-5
@@ -11,8 +19,8 @@ SDK_DIR?=/sdk
 DEPFLAGS=-MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 WARNINGS=-Wall -Wextra -pedantic -Werror -pedantic-errors
 INCLUDES=-I$(SDK_DIR)/include #-I$(SOURCEDIR)
-DEFINES=
-FUNCTION_FLAGS=-flto=auto -ffat-lto-objects -fno-builtin -ffunction-sections -fdata-sections -gdwarf-5 -O2
+DEFINES=-DDEBUG=1
+FUNCTION_FLAGS=-fno-builtin -ffunction-sections -fdata-sections -gdwarf-5 -Oz -flto -fdevirtualize-at-ltrans -fwhole-program
 COMMON_FLAGS=$(FUNCTION_FLAGS) $(INCLUDES) $(WARNINGS) $(DEFINES)
 
 CC:=sh4a_nofpueb-elf-gcc
@@ -22,7 +30,7 @@ CXX:=sh4a_nofpueb-elf-g++
 CXX_FLAGS=-std=c++20 $(COMMON_FLAGS)
 
 LD:=sh4a_nofpueb-elf-g++
-LD_FLAGS:=$(FUNCTION_FLAGS) -Wl,--gc-sections
+LD_FLAGS:=$(FUNCTION_FLAGS) -Wl,--gc-sections,-Ttext-segment,0x8CC80000
 LIBS:=-L$(SDK_DIR) -lsdk
 
 READELF:=sh4a_nofpueb-elf-readelf
@@ -57,30 +65,42 @@ clean:
 %.hh3: %.elf
 	$(STRIP) -o $@ $^
 
+$(OS_TXT): phony
+	@mkdir -p $(OUTDIR)
+	@tmp=$@.tmp; \
+	printf '%s\n' '$(OS)' > $$tmp; \
+	if test -f $@ && cmp -s $$tmp $@; then \
+		rm -f $$tmp; \
+	else \
+		mv -f $$tmp $@; \
+	fi
+
 $(APP_ELF): $(OBJECTS)
 	@mkdir -p $(dir $@)
 	$(LD) -Wl,-Map $@.map -o $@ $(LD_FLAGS) $^ $(LIBS)
 
 $(NOLTOOBJS): FUNCTION_FLAGS+=-fno-lto
 
-$(BUILDDIR)/%.o: %.S
+$(BUILDDIR)/%.o: %.S $(OS_TXT)
 	@mkdir -p $(dir $@)
 	$(AS) -c $< -o $@ $(AS_FLAGS)
 
-$(BUILDDIR)/%.o: %.c
+$(BUILDDIR)/%.o: %.c $(OS_TXT)
 	@mkdir -p $(dir $@)
 	@mkdir -p $(dir $(DEPDIR)/$<)
 	+$(CC) -c $< -o $@ $(CC_FLAGS) $(DEPFLAGS)
 
-$(BUILDDIR)/%.o: %.cpp
+$(BUILDDIR)/%.o: %.cpp $(OS_TXT)
 	@mkdir -p $(dir $@)
 	@mkdir -p $(dir $(DEPDIR)/$<)
 	+$(CXX) -c $< -o $@ $(CXX_FLAGS) $(DEPFLAGS)
 
-compile_commands.json:
-	$(MAKE) $(MAKEFLAGS) clean
-	bear -- sh -c "$(MAKE) $(MAKEFLAGS) --keep-going all || exit 0"
 
-.PHONY: elf hh3 all clean compile_commands.json
+compile_commands.json:
+	@$(MAKE) OS=$(OS) clean
+	bear -- sh -c "$(MAKE) $(MAKEFLAGS) OS=$(OS) --keep-going all || exit 0"
+
+
+.PHONY: phony elf hh3 all clean compile_commands.json
 
 -include $(DEPFILES)

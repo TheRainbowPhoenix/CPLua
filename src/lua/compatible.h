@@ -1,0 +1,44 @@
+#pragma once
+
+#include <stdio.h>
+#include <signal.h>
+#ifndef sig_atomic_t
+typedef int sig_atomic_t;
+#endif
+#include <stdlib.h>
+#include <time.h>
+extern void cplua_print(const char* s, int l);
+extern void cplua_println();
+
+#ifdef L_tmpnam
+#undef L_tmpnam
+#endif
+#define L_tmpnam 20
+
+#ifdef EXIT_SUCCESS
+#undef EXIT_SUCCESS
+#endif
+#define EXIT_SUCCESS 0
+
+#ifdef EXIT_FAILURE
+#undef EXIT_FAILURE
+#endif
+#define EXIT_FAILURE 1
+
+#ifdef lua_writestring
+#undef lua_writestring
+#endif
+#define lua_writestring(s,l) cplua_print(s, (int)(l))
+
+#ifdef lua_writeline
+#undef lua_writeline
+#endif
+#define lua_writeline() cplua_println()
+
+#ifndef SIG_DFL
+#define SIG_DFL 0
+#endif
+
+#ifndef SIGINT
+#define SIGINT 1
+#endif

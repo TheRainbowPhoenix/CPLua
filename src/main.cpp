@@ -60,6 +60,7 @@ public:
         // Allocate dynamically; the list manages the objects
         char* nameCopy = new char[luaFiles[i].length() + 1];
         strcpy(nameCopy, luaFiles[i].c_str());
+        allocatedNames.push_back(nameCopy);
         PegRadioButton* item = new PegRadioButton(0, 0, nameCopy, Id_List + 10 + i);
         options.push_back(item);
         vertList->Add(item->obj());
@@ -85,6 +86,13 @@ public:
 
 
 
+
+
+  ~LuaFilePickerWindow() {
+    for (char* name : allocatedNames) {
+      delete[] name;
+    }
+  }
 
   void ScanLuaFiles(const char* /*pattern*/) {
       int findHandle = 0;
@@ -145,6 +153,7 @@ private:
   PegVertList *vertList;
   std::vector<PegRadioButton*> options;
   std::vector<std::string> luaFiles;
+  std::vector<char*> allocatedNames;
 };
 
 extern "C" void calcInit() {
